@@ -1,0 +1,318 @@
+Option Explicit
+
+Sub PlayCheckers()
+    Dim currentPlayer As String
+    Dim isGameOver As Boolean
+    
+    'начальное состояние игры
+    Range("A1:H8").Select
+    Selection.ClearContents
+    Range("B1,D1,F1,H1,A2,C2,E2,G2,B3,D3,F3,H3").Value = "?" ' черные шашки
+    Range("A8,C8,E8,G8,B7,D7,F7,H7,A6,C6,E6,G6").Value = "0" ' белые шашки
+    
+    'определение первого хода
+    If Application.WorksheetFunction.RandBetween(1, 2) = 1 Then
+        currentPlayer = "white"
+        MsgBox "Первым ходит игрок с белыми шашками"
+    Else
+        currentPlayer = "black"
+        MsgBox "Первым ходит игрок с черными шашками"
+    End If
+    
+    'ходы игроков
+    Do Until isGameOver
+        Call MoveChecker(currentPlayer)
+        If currentPlayer = "white" Then
+            currentPlayer = "black"
+        Else
+            currentPlayer = "white"
+        End If
+        isGameOver = CheckGameOver()
+    Loop
+    
+    'завершение игры
+    MsgBox "Игра окончена. Победил игрок с " & IIf(currentPlayer = "white", "белыми", "черными") & " шашками."
+End Sub
+
+
+Sub MoveChecker(currentPlayer As String)
+    'определение координат текущей ячейки
+    Dim currentRow As Integer
+    Dim currentColumn As Integer
+    currentRow = ActiveCell.row
+    currentColumn = ActiveCell.column
+    
+    'определение символа текущей ячейки
+    Dim currentSymbol As String
+    currentSymbol = ActiveCell.Value
+    
+    'проверка, что выбрана шашка
+    If currentSymbol = "" Or currentSymbol = " " Then
+        MsgBox "Выберите шашку для перемещения!"
+        Exit Sub
+    End If
+    
+    'проверка, что выбрана правильная шашка (шашка текущего игрока)
+    If currentPlayer = "white" And currentSymbol <> "0" Then
+        MsgBox "Выбрана шашка другого игрока! Выберите свою белую шашку."
+        Exit Sub
+    ElseIf currentPlayer = "black" And currentSymbol <> "?" Then
+        MsgBox "Выбрана шашка другого игрока! Выберите свою черную шашку."
+        Exit Sub
+    End If
+    
+    'получение координат ячеек, куда можно переместить шашку
+    Dim targetRows(1 To 2) As Integer
+    Dim targetColumns(1 To 2) As Integer
+    
+    If currentPlayer = "white" Then
+        targetRows(1) = currentRow - 1
+        targetRows(2) = currentRow - 1
+        targetColumns(1) = currentColumn - 1
+        targetColumns(2) = currentColumn + 1
+    Else
+        targetRows(1) = currentRow + 1
+        targetRows(2) = currentRow + 1
+        targetColumns(1) = currentColumn - 1
+        targetColumns(2) = currentColumn + 1
+    End If
+    
+    'перебор ячеек, куда можно переместить шашку
+    Dim targetCell As Range
+    Dim targetSymbol As String
+    Dim validTargets As String
+    For i = 1 To 2
+        Set targetCell = Cells(targetRows(i), targetColumns(i))
+        targetSymbol = targetCell.Value
+        If targetSymbol = "" Then
+            validTargets = validTargets & targetCell.Address & ","
+        End If
+    Next i
+    
+    'проверка, что есть доступные целевые ячейки
+    If validTargets = "" Then
+        MsgBox "Нет доступных ходов для этой шашки!"
+        Exit Sub
+    End If
+    
+    'выбор ячейки, куда переместить шашку
+    Dim selectedTarget As Range
+    selectedTarget = Application.InputBox(prompt:="Выберите целевую ячейку для перемещения шашки. Доступные ячейки:" & validTargets, Type:=8)
+    If selectedTarget Is Nothing Then
+        Exit Sub
+    End If
+     
+    If InStr(validTargets, selectedTarget.Address(False, False)) = 0 Then
+        MsgBox "Выбрана недопустимая целевая ячейка!"
+        Exit Sub
+    End If
+    
+    'обновление состояния доски
+    currentSymbol = ""
+    ' проверка, что выбрана шашка
+    If currentSymbol <> "0" And currentSymbol <> "?" Then
+        MsgBox "Выберите шашку для перемещения!"
+        Exit Sub
+    End If
+    
+    ' проверка, что выбрана шашка текущего игрока
+    Dim currentPlayer As String
+    If currentSymbol = "0" Then
+        currentPlayer = "white"
+    Else
+        currentPlayer = "black"
+    End If
+    
+    If currentPlayer <> currentTurn Then
+        MsgBox "Сейчас ходят " & currentTurn & " шашки. Выберите правильную шашку для перемещения!"
+        Exit Sub
+    End If
+    
+    ' получение координат ячеек, куда можно переместить шашку
+    Dim targetRows(1 To 2) As Integer
+    Dim targetColumns(1 To 2) As Integer
+    
+    If currentPlayer = "white" Then
+        targetRows(1) = currentRow - 1
+        targetRows(2) = currentRow - 1
+        targetColumns(1) = currentColumn - 1
+        targetColumns(2) = currentColumn + 1
+    Else
+        targetRows(1) = currentRow + 1
+        targetRows(2) = currentRow + 1
+        targetColumns(1) = currentColumn - 1
+        targetColumns(2) = currentColumn + 1
+    End If
+    
+    ' перебор ячеек, куда можно переместить шашку
+    Dim targetCell As Range
+    Dim targetSymbol As String
+    Dim validTargets As String
+    
+    For i = 1 To 2
+        Set targetCell = Cells(targetRows(i), targetColumns(i))
+        targetSymbol = targetCell.Value
+        
+        If targetSymbol = "" Then
+            validTargets = validTargets & targetCell.Address & ","
+        End If
+    Next i
+    
+    ' проверка, что есть доступные целевые ячейки
+    If validTargets = "" Then
+        MsgBox "Нет доступных ходов для этой шашки!"
+        Exit Sub
+    End If
+    
+    ' выбор ячейки, куда переместить шашку
+    Dim selectedTarget As Range
+    selectedTarget = Application.InputBox(prompt:="Выберите целевую ячейку для перемещения шашки. Доступные ячейки: " & validTargets, Type:=8)
+    
+    If selectedTarget Is Nothing Then
+        Exit Sub
+    End If
+    
+    If InStr(validTargets, selectedTarget.Address(False, False)) = 0 Then
+        MsgBox "Выбрана недопустимая целевая ячейка!"
+        Exit Sub
+    End If
+    
+    currentSymbol = ""
+    selectedTarget.Value = IIf(currentPlayer = "white", "0", "?")
+    
+    ' проверка на взятие шашки
+    Dim jumpTarget As Range
+    Dim jumpSymbol As String
+    For i = 1 To 2
+        Set jumpTarget = Cells(jumpRows(i), jumpColumns(i))
+        jumpSymbol = jumpTarget.Value
+        If jumpSymbol <> "" And jumpSymbol <> currentSymbol And jumpSymbol <> "?" Then
+            Set targetCell = Cells(jumpRows(i) + (jumpRows(i) - currentRow), jumpColumns(i) + (jumpColumns(i) - currentColumn))
+            targetSymbol = targetCell.Value
+            If targetSymbol = "" Then
+                validTargets = validTargets & targetCell.Address & ","
+            End If
+        End If
+    Next i
+
+'проверка, что есть доступные целевые ячейки после "прыжка"
+    If validTargets = "" And jumpPossible Then
+        MsgBox "Нет доступных ходов для этой шашки!"
+        Exit Sub
+    End If
+
+'выбор ячейки, куда переместить шашку
+    Dim selectedTarget As Range
+    If jumpPossible And validTargets <> "" Then
+        Set selectedTarget = Application.InputBox(prompt:="Шашка может совершить прыжок! Выберите целевую ячейку для прыжка. Доступные ячейки:" & validTargets, Type:=8)
+        If selectedTarget Is Nothing Then
+            Exit Sub
+        End If
+    Else
+        Set selectedTarget = Application.InputBox(prompt:="Выберите целевую ячейку для перемещения шашки. Доступные ячейки:" & validTargets, Type:=8)
+        If selectedTarget Is Nothing Then
+            Exit Sub
+        End If
+    End If
+ 
+    If InStr(validTargets, selectedTarget.Address(False, False)) = 0 Then
+        MsgBox "Выбрана недопустимая целевая ячейка!"
+        Exit Sub
+    End If
+End Sub
+currentSymbol = ""
+selectedTarget.Value = IIf(currentPlayer = "white", "0", "?")
+
+'проверка возможности продолжения хода (еще один "прыжок")
+If jumpPossible And (Abs(selectedTarget.row - currentRow) > 1 Or Abs(selectedTarget.column - currentColumn) > 1) Then
+    currentRow = selectedTarget.row
+    currentColumn = selectedTarget.column
+    Call JumpChecker(currentPlayer, currentRow, currentColumn)
+End If
+   
+Function CheckGameOver() As Boolean
+    Dim whiteCount As Integer
+    Dim blackCount As Integer
+    Dim isWhiteFound As Boolean
+    Dim isBlackFound As Boolean
+    Dim i As Integer, j As Integer
+    Dim cellValue As String
+    
+    'проверка наличия доступных ходов
+    For i = 1 To 8
+        For j = 1 To 8
+            cellValue = Cells(i, j).Value
+            If cellValue = "0" Then 'белая шашка
+                If CheckValidMoves(i, j, "white") Then
+                    CheckGameOver = False
+                    Exit Function
+                End If
+            ElseIf cellValue = "?" Then 'черная шашка
+                If CheckValidMoves(i, j, "black") Then
+                    CheckGameOver = False
+                    Exit Function
+                End If
+            End If
+        Next j
+    Next i
+    
+    'подсчет оставшихся шашек каждого игрока
+    For i = 1 To 8
+        For j = 1 To 8
+            cellValue = Cells(i, j).Value
+            If cellValue = "0" Then 'белая шашка
+                whiteCount = whiteCount + 1
+            ElseIf cellValue = "?" Then 'черная шашка
+                blackCount = blackCount + 1
+            End If
+        Next j
+    Next i
+    
+    'проверка, что остались шашки каждого игрока
+    isWhiteFound = whiteCount > 0
+    isBlackFound = blackCount > 0
+    
+    If Not isWhiteFound And Not isBlackFound Then 'шашки обоих игроков были съедены
+        MsgBox "Ничья!"
+    ElseIf Not isWhiteFound Then 'шашки белого игрока были съедены
+        MsgBox "Игра окончена. Победил игрок с черными шашками."
+    ElseIf Not isBlackFound Then 'шашки черного игрока были съедены
+        MsgBox "Игра окончена. Победил игрок с белыми шашками."
+    Else
+        CheckGameOver = False
+    End If
+End Function
+
+Function CheckValidMoves(ByVal row As Integer, ByVal column As Integer, ByVal currentPlayer As String) As Boolean
+    Dim targetRows(1 To 2) As Integer
+    Dim targetColumns(1 To 2) As Integer
+    Dim targetCell As Range
+    Dim targetSymbol As String
+    Dim i As Integer
+    
+    If currentPlayer = "white" Then
+        targetRows(1) = row - 1
+        targetRows(2) = row - 1
+        targetColumns(1) = column - 1
+        targetColumns(2) = column + 1
+    Else
+        targetRows(1) = row + 1
+        targetRows(2) = row + 1
+        targetColumns(1) = column - 1
+        targetColumns(2) = column + 1
+    End If
+    
+    For i = 1 To 2
+        If targetRows(i) >= 1 And targetRows(i) <= 8 And targetColumns(i) >= 1 And targetColumns(i) <= 8 Then
+            Set targetCell = Cells(targetRows(i), targetColumns(i))
+            targetSymbol = targetCell.Value
+            If targetSymbol = "-" Then
+                CheckValidMoves = True
+                Exit Function
+            End If
+        End If
+    Next i
+    
+    CheckValidMoves = False
+End Function
+
